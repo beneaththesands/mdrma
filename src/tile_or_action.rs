@@ -1,17 +1,16 @@
-use crate::actions::{Action, requires_tile};
+use crate::actions::*;
 use crate::tiles::Tile;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct TileOrAction {
     inner: u8
 }
 
-const ACTION_DEF: u8 = 0b1110_0000;
 impl TileOrAction {
     #[inline(always)]
     pub const fn is_tile(&self) -> bool {
-        // the high three bits of every tile are 000, and all actions contain a nonzero bit among them
-        !self.inner & ACTION_DEF == ACTION_DEF
+        // the high two bits of every tile are 00, and all actions contain a nonzero bit among them
+        self.inner >> 6 == 0
     }
 
     #[inline(always)]
@@ -25,16 +24,58 @@ impl TileOrAction {
         }
     }
 
-    pub fn value_unchecked(&self) -> (Action, Tile) {
+    pub fn to_value_unchecked(&self, is_call: bool) -> (Action, Tile) {
+        // There are a large number of commands that start with 11
+        // Chii starts with 01, but can start with 011 for red fives
         if self.is_tile() { 
             return (Action::None, Tile::try_from(self.inner).unwrap()) 
         }
-        
-        if requires_tile(self.inner) {
-            return (Action::try_from(self.inner & 0b1110_0000).unwrap(),
-             Tile::try_from(self.inner & 0b0001_1111).unwrap())
-        }
 
-        (Action::try_from(self.inner).unwrap(), Tile::None)
+        let with_tile = Action::has_tile(self.inner);
+        match (with_tile, is_call) {
+            // Call with tile
+            (true, true) => {
+                return (
+                    Action::try_from(self.inner & 0b0110_0000).unwrap(), 
+                    Tile::try_from(self.inner & 0b1_1111).unwrap()
+                )
+            },
+            // Declare with tile
+            (true, false) => {
+                return (
+                    Action::try_from(self.inner & 0b1100_0000).unwrap(),
+                    Tile::try_from(self.inner & 0b0011_1111).unwrap()
+                )
+            },
+            // Tileless call
+            (false, _) => {
+                return (
+                    Action::try_from(self.inner).unwrap(),
+                    Tile::None
+                )
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tile_or_action::TileOrAction;
+
+    #[test]
+    fn test_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<TileOrAction>();
+    }
+
+    #[test]
+    fn test_sync() {
+        fn assert_sync<T: Sync>() {}
+        assert_sync::<TileOrAction>();
+    }
+
+    #[test]
+    fn validate() {
+        assert!(false)
     }
 }

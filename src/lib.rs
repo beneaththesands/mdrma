@@ -9,7 +9,7 @@ use crate::tile_or_action::TileOrAction;
 pub use crate::tiles::Tile;
 pub use crate::actions::Action;
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Default, Debug, Hash)]
 pub struct Hand {
     #[serde(rename="i")] 
     initial_state: InitialState,
@@ -18,9 +18,12 @@ pub struct Hand {
 }
 
 impl Hand {
-    pub fn new_unchecked(init: InitialState) -> Self {
+    pub fn new() -> Self {
+        Hand::default()
+    }
+    pub fn new_from_unchecked(init: InitialState) -> Self {
         Self {
-            initial_state: init.into(),
+            initial_state: init,
             actions: Vec::default()
         }
     }
@@ -48,10 +51,9 @@ impl Hand {
         &self.initial_state
     }
 
-    pub fn actions(&self) -> Vec<TileOrAction> {
+    pub fn to_actions(&self) -> Vec<TileOrAction> {
         self.actions.iter().map(|item| TileOrAction::new_unchecked(*item)).collect()
     }
-
 }
 
 #[inline]
@@ -59,16 +61,17 @@ fn is_default<T>(t: &T) -> bool where T : Default+PartialEq {
     *t == T::default() 
 }
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Eq, Debug, Clone, Copy, Default, Hash)]
 #[repr(u8)]
 pub enum Wind {
+    #[default]
     East = 0,
     South = 1,
     West = 2,
     North = 3,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Default, Hash)]
 pub struct InitialState {
     #[serde(rename="e")] 
     pub east_hand: Vec<Tile>,
@@ -92,6 +95,12 @@ pub struct InitialState {
     pub prevailing_wind: Wind,
 }
 
+impl InitialState {
+    pub fn new() -> Self {
+        InitialState::default()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::*;
@@ -100,23 +109,20 @@ mod test {
     use rand::SeedableRng;
 
     #[test]
-    fn basics() {
-        let hand = Hand::new_unchecked(
-            InitialState {
-                repeat_count: 0,
-            unclaimed_riichi_count: 0,
-            hanba_count: 0,
-            prevailing_wind: Wind::East,
-                east_hand: vec![],
-                south_hand: vec![],
-                west_hand: vec![],
-                north_hand: vec![],
-                dead_wall: vec![],
-                living_wall: vec![],
-            }
-        );
+    fn test_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<Hand>();
+    }
 
-        do_serialize(&hand);
+    #[test]
+    fn test_sync() {
+        fn assert_sync<T: Sync>() {}
+        assert_sync::<Hand>();
+    }
+
+    #[test]
+    fn basics() {
+        do_serialize(&Hand::default());
     }
 
     #[test]
@@ -129,7 +135,7 @@ mod test {
         ]);
         tiles.shuffle(&mut rng);
         init_tiles(tiles, &mut init);
-        do_serialize(&Hand::new_unchecked(init));
+        do_serialize(&Hand::new_from_unchecked(init));
     }
 
     #[test]
@@ -141,7 +147,7 @@ mod test {
         init.unclaimed_riichi_count = 1;
         init_tiles(get_tiles(), &mut init);
 
-        do_serialize(&Hand::new_unchecked(init));
+        do_serialize(&Hand::new_from_unchecked(init));
     }
 
     #[test]
@@ -155,13 +161,13 @@ mod test {
         tiles.shuffle(&mut rng);
         init_tiles(tiles, &mut init);
 
-        let mut hand = Hand::new_unchecked(init);
+        let mut hand = Hand::new_from_unchecked(init);
         let living_wall = (*(&hand.initial_state.living_wall)).clone();
 
         for tile in living_wall {
-            hand.draw_unchecked(tile);
-            hand.discard_unchecked(tile);
-            hand.act_unchecked(Action::CallChii, Some(tile));
+            hand.draw_unchecked(tile)
+                .discard_unchecked(tile)
+                .act_unchecked(Action::CallChiiOrDeclareKan, Some(tile));
         }
 
         do_serialize(&hand);
