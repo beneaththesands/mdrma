@@ -103,7 +103,7 @@ mod test {
         check_value(Action::None, Tile::ManNine, false);
     }
 
-    fn check_value(mut action: Action, tile: Tile, is_call: bool) {
+    fn check_value(action: Action, tile: Tile, is_call: bool) {
         let action_value = if action == Action::None { !(action as u8) } else { action as u8 };
         let combo = TileOrAction::new_unchecked(action_value | tile as u8);
         let (out_action, out_tile) = combo.to_value_unchecked(is_call);

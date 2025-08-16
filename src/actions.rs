@@ -9,14 +9,6 @@ pub enum Player {
     Left = 0b10,
 }
 
-#[repr(u8)]
-pub enum PlayerBasedActions {
-    CallKan = 0b1110_1000,
-    CallPon = 0b1110_1100,
-    CallPonWithRedFive = 0b1111_0100,
-    CallRon = 0b1111_1000,
-}
-
 #[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy, TryFromPrimitive, Default, Hash)]
 #[repr(u8)]
 pub enum Action {
