@@ -126,7 +126,6 @@ mod test {
     use crate::tiles::*;
     use std::cmp::Ordering;
     use std::cmp::Ordering::*;
-    use std::result;
 
     #[test]
     fn test_send() {

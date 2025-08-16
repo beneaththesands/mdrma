@@ -51,8 +51,8 @@ impl Hand {
         &self.initial_state
     }
 
-    pub fn to_actions(&self) -> Vec<TileOrAction> {
-        self.actions.iter().map(|item| TileOrAction::new_unchecked(*item)).collect()
+    pub fn to_parts(self) -> (InitialState, impl Iterator<Item = TileOrAction>) {
+        (self.initial_state, self.actions.into_iter().map(|item| TileOrAction::new_unchecked(item)))
     }
 }
 

@@ -60,7 +60,9 @@ impl TileOrAction {
 
 #[cfg(test)]
 mod test {
-    use crate::tile_or_action::TileOrAction;
+    use crate::tile_or_action::{TileOrAction};
+    use crate::actions::*;
+    use crate::tiles::*;
 
     #[test]
     fn test_send() {
@@ -76,6 +78,36 @@ mod test {
 
     #[test]
     fn validate() {
-        assert!(false)
+        check_value(Action::CallChiiOrDeclareKan, Tile::HonorGreenDragon, false);
+        check_value(Action::CallChiiOrDeclareKan, Tile::PinOne, false);
+        check_value(Action::CallChiiOrDeclareKan, Tile::PinOne, true);
+        check_value(Action::CallChiiWithRedFive, Tile::ManFour, true);
+
+        check_value(Action::DeclareRiichi, Tile::HonorSouth, false);
+        check_value(Action::DeclareRiichi, Tile::SouNine, false);
+
+        check_value(Action::CallPonByLeft, Tile::None, true);
+        check_value(Action::CallPonByOppositeWithRedFive, Tile::None, true);
+        check_value(Action::CallKanByRight, Tile::None, true);
+        check_value(Action::CallRonByOpposite, Tile::None, true);
+
+        check_value(Action::DeclareKita, Tile::None, false);
+        check_value(Action::DeclareTsumo, Tile::None, false);
+        check_value(Action::DeclareMulligan, Tile::None, false);
+
+        check_value(Action::None, Tile::ManRedFive, false);
+        check_value(Action::None, Tile::SouEight, false);
+        check_value(Action::None, Tile::HonorGreenDragon, false);
+        check_value(Action::None, Tile::HonorEast, false);
+        check_value(Action::None, Tile::PinOne, false);
+        check_value(Action::None, Tile::ManNine, false);
+    }
+
+    fn check_value(mut action: Action, tile: Tile, is_call: bool) {
+        let action_value = if action == Action::None { !(action as u8) } else { action as u8 };
+        let combo = TileOrAction::new_unchecked(action_value | tile as u8);
+        let (out_action, out_tile) = combo.to_value_unchecked(is_call);
+        assert_eq!(action, out_action);        
+        assert_eq!(tile, out_tile);   
     }
 }
